@@ -10,6 +10,7 @@ import random
 import numpy as np
 from collections import deque
 
+#参数配置
 GAME = 'bird' # the name of the game being played for log files
 ACTIONS = 2 # number of valid actions
 GAMMA = 0.99 # decay rate of past observations
@@ -21,60 +22,77 @@ REPLAY_MEMORY = 50000 # number of previous transitions to remember
 BATCH = 32 # size of minibatch
 FRAME_PER_ACTION = 1
 
+#定义权重变量
 def weight_variable(shape):
     initial = tf.truncated_normal(shape, stddev = 0.01)
     return tf.Variable(initial)
 
+#定义偏移变量
 def bias_variable(shape):
     initial = tf.constant(0.01, shape = shape)
     return tf.Variable(initial)
 
+#定义卷积
 def conv2d(x, W, stride):
     return tf.nn.conv2d(x, W, strides = [1, stride, stride, 1], padding = "SAME")
 
+#定义最大池化
 def max_pool_2x2(x):
     return tf.nn.max_pool(x, ksize = [1, 2, 2, 1], strides = [1, 2, 2, 1], padding = "SAME")
 
+#创建网络模型
 def createNetwork():
     # network weights
+    #第一层卷积
     W_conv1 = weight_variable([8, 8, 4, 32])
     b_conv1 = bias_variable([32])
 
+    #第二层卷积
     W_conv2 = weight_variable([4, 4, 32, 64])
     b_conv2 = bias_variable([64])
 
+    #第三层卷积
     W_conv3 = weight_variable([3, 3, 64, 64])
     b_conv3 = bias_variable([64])
 
+    #第一层全连接
     W_fc1 = weight_variable([1600, 512])
     b_fc1 = bias_variable([512])
 
+    #第二层全连接
     W_fc2 = weight_variable([512, ACTIONS])
     b_fc2 = bias_variable([ACTIONS])
 
     # input layer
+    # 输入层
     s = tf.placeholder("float", [None, 80, 80, 4])
 
+    # 隐层，第一层卷积
     # hidden layers
     h_conv1 = tf.nn.relu(conv2d(s, W_conv1, 4) + b_conv1)
     h_pool1 = max_pool_2x2(h_conv1)
 
+    # 第二层卷积
     h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2, 2) + b_conv2)
     #h_pool2 = max_pool_2x2(h_conv2)
 
+    # 第三层卷积
     h_conv3 = tf.nn.relu(conv2d(h_conv2, W_conv3, 1) + b_conv3)
     #h_pool3 = max_pool_2x2(h_conv3)
 
     #h_pool3_flat = tf.reshape(h_pool3, [-1, 256])
     h_conv3_flat = tf.reshape(h_conv3, [-1, 1600])
 
+    # 全连接 第一层
     h_fc1 = tf.nn.relu(tf.matmul(h_conv3_flat, W_fc1) + b_fc1)
 
     # readout layer
+    # 输出层
     readout = tf.matmul(h_fc1, W_fc2) + b_fc2
 
     return s, readout, h_fc1
 
+# 训练网络
 def trainNetwork(s, readout, h_fc1, sess):
     # define the cost function
     a = tf.placeholder("float", [None, ACTIONS])
@@ -143,11 +161,13 @@ def trainNetwork(s, readout, h_fc1, sess):
         s_t1 = np.append(x_t1, s_t[:, :, :3], axis=2)
 
         # store the transition in D
+        # 保存过渡值
         D.append((s_t, a_t, r_t, s_t1, terminal))
         if len(D) > REPLAY_MEMORY:
             D.popleft()
 
         # only train if done observing
+        # 观察完后训练
         if t > OBSERVE:
             # sample a minibatch to train on
             minibatch = random.sample(D, BATCH)
@@ -175,10 +195,12 @@ def trainNetwork(s, readout, h_fc1, sess):
                 s : s_j_batch}
             )
 
+        # 更新旧值
         # update the old values
         s_t = s_t1
         t += 1
 
+        # 每10000次迭代保存处理
         # save progress every 10000 iterations
         if t % 10000 == 0:
             saver.save(sess, 'saved_networks/' + GAME + '-dqn', global_step = t)
@@ -203,6 +225,7 @@ def trainNetwork(s, readout, h_fc1, sess):
             cv2.imwrite("logs_tetris/frame" + str(t) + ".png", x_t1)
         '''
 
+# 显示游戏
 def playGame():
     sess = tf.InteractiveSession()
     s, readout, h_fc1 = createNetwork()
