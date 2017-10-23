@@ -57,6 +57,7 @@ class GameState:
         self.playerFlapAcc =  -9   # players speed on flapping
         self.playerFlapped = False # True when player flaps
 
+    # 帧
     def frame_step(self, input_actions):
         pygame.event.pump()
 
@@ -144,6 +145,7 @@ class GameState:
         #print self.upperPipes[0]['y'] + PIPE_HEIGHT - int(BASEY * 0.2)
         return image_data, reward, terminal
 
+# 获取随机管道
 def getRandomPipe():
     """returns a randomly generated pipe"""
     # y of gap between upper and lower pipe
@@ -159,7 +161,7 @@ def getRandomPipe():
         {'x': pipeX, 'y': gapY + PIPEGAPSIZE},  # lower pipe
     ]
 
-
+# 显示分数
 def showScore(score):
     """displays score in center of screen"""
     scoreDigits = [int(x) for x in list(str(score))]
@@ -174,7 +176,7 @@ def showScore(score):
         SCREEN.blit(IMAGES['numbers'][digit], (Xoffset, SCREENHEIGHT * 0.1))
         Xoffset += IMAGES['numbers'][digit].get_width()
 
-
+# 检查碰撞
 def checkCrash(player, upperPipes, lowerPipes):
     """returns True if player collders with base or pipes."""
     pi = player['index']
@@ -208,6 +210,7 @@ def checkCrash(player, upperPipes, lowerPipes):
 
     return False
 
+# 像素碰撞
 def pixelCollision(rect1, rect2, hitmask1, hitmask2):
     """Checks if two objects collide and not just their rects"""
     rect = rect1.clip(rect2)
